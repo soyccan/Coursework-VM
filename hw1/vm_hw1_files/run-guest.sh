@@ -3,9 +3,9 @@
 CONSOLE=mon:stdio
 SMP=2
 MEMSIZE=$((512))
-KERNEL="Image"
-FS=cloud.img
-CMDLINE="earlycon=pl011,0x09000000"
+KERNEL="./linux/arch/arm64/boot/Image"
+FS="./image/ubuntu-20.04-server-cloudimg-arm64.1.qcow2"
+CMDLINE="earlycon=pl011,0x09000000 init=/root/blocker"
 DUMPDTB=""
 DTB=""
 
@@ -22,6 +22,7 @@ usage() {
         U="$U    -s | --serial <file>:  Output console to <file>\n"
         U="$U    -i | --image <image>:  Use <image> as block device (default $FS)\n"
         U="$U    -a | --append <snip>:  Add <snip> to the kernel cmdline\n"
+        U="$U    -d | --debug:          Stop at launch for debugger to attach\n"
         U="$U    --dumpdtb <file>       Dump the generated DTB to <file>\n"
         U="$U    --dtb <file>           Use the supplied DTB instead of the auto-generated one\n"
         U="$U    -h | --help:           Show this output\n"
@@ -64,6 +65,10 @@ do
                 DTB="-dtb $2"
                 shift 2
                 ;;
+          -d | --debug)
+                GDB_FLAGS="-S"
+                shift 1
+                ;;
           -h | --help)
                 usage ""
                 exit 1
@@ -89,10 +94,11 @@ fi
 
 qemu-system-aarch64 -nographic -machine virt -m ${MEMSIZE} -cpu host -smp ${SMP} -enable-kvm \
         -kernel ${KERNEL} ${DTB} \
-        -drive if=none,file=$FS,id=vda,cache=none,format=raw \
+        -drive if=none,file=$FS,id=vda,cache=none,format=qcow2 \
         -device virtio-blk-pci,drive=vda \
         -display none \
         -serial $CONSOLE \
-        -append "console=ttyAMA0 root=/dev/vda rw $CMDLINE" \
+        -append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE" \
         -netdev user,id=net0,hostfwd=tcp::2222-:22 \
-        -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:49 \
+        -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:50,romfile= \
+        -s $GDB_FLAGS

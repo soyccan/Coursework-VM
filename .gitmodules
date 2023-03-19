@@ -1,0 +1,6 @@
+[submodule "hw1/linux"]
+	path = hw1/linux
+	url = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/
+[submodule "hw1/qemu"]
+	path = hw1/qemu
+	url = https://gitlab.com/qemu-project/qemu.git

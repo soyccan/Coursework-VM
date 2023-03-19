@@ -1,0 +1,22 @@
+#cloud-config
+ssh_pwauth: true
+chpasswd:
+  users:
+    - name: root
+      password: ''
+ssh_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHDI+XjvgCClkeAB/0okM62heWILe27A2tkoyRo9hEhA soyccan@vm-hw1
+disable_root: false
+timezone: Asia/Taipei
+apt:
+  primary:
+    - arches: [default]
+      uri: http://tw.ports.ubuntu.com/ubuntu-ports/
+packages:
+  - qemu-system-arm
+  - gdb
+mounts:
+  - [host_linux, /root/linux, 9p]
+  - [host_qemu, /root/qemu, 9p]
+  - [host_image, /root/image, 9p]
+  - [host_vm_hw1_files, /root/vm_hw1_files, 9p]

@@ -1,0 +1,39 @@
+diff --git a/arch/arm64/kvm/arm.c b/arch/arm64/kvm/arm.c
+index fe102cd2e..76390f3c8 100644
+--- a/arch/arm64/kvm/arm.c
++++ b/arch/arm64/kvm/arm.c
+@@ -2110,6 +2110,7 @@ int kvm_arch_init(void *opaque)
+ 	} else {
+ 		kvm_info("Hyp mode initialized successfully\n");
+ 	}
++	printk("this is my KVM [R10922187]\n");
+ 
+ 	return 0;
+ 
+diff --git a/arch/arm64/kvm/hyp/nvhe/switch.c b/arch/arm64/kvm/hyp/nvhe/switch.c
+index a34b01cc8..668b8b35f 100644
+--- a/arch/arm64/kvm/hyp/nvhe/switch.c
++++ b/arch/arm64/kvm/hyp/nvhe/switch.c
+@@ -217,6 +217,22 @@ int __kvm_vcpu_run(struct kvm_vcpu *vcpu)
+ 	__debug_switch_to_guest(vcpu);
+ 
+ 	do {
++		// VM HW1: hack the blocker before switching to guest
++		// inspect the VCPU context to find the signature
++		u64 pattern[] = { 0,	      0x1010101, 0x20202020, 0x3030303,
++				  0x40404040, 0x5050505, 0x60606060, 0x7070707,
++				  0x80808080, 0x9090909 };
++		bool signature_found = true;
++		int i;
++		for (i = 0; i < ARRAY_SIZE(pattern); i++)
++			if (vcpu_get_reg(vcpu, i) != pattern[i])
++				signature_found = false;
++
++		if (signature_found) {
++			// set x0 to a non-zero value
++			vcpu_set_reg(vcpu, 0, 0xdeadbeef);
++		}
++
+ 		/* Jump in the fire! */
+ 		exit_code = __guest_enter(vcpu);
+ 

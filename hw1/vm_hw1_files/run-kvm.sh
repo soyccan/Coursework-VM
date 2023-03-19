@@ -3,8 +3,9 @@
 CONSOLE=mon:stdio
 SMP=2
 MEMSIZE=$((2048))
-KERNEL="Image"
-FS=cloud.img
+KERNEL="./linux/arch/arm64/boot/Image"
+FS="./image/ubuntu-20.04-server-cloudimg-arm64.qcow2"
+SEED="./image/seed.img"
 CMDLINE="earlycon=pl011,0x09000000"
 DUMPDTB=""
 DTB=""
@@ -22,6 +23,7 @@ usage() {
         U="$U    -s | --serial <file>:  Output console to <file>\n"
         U="$U    -i | --image <image>:  Use <image> as block device (default $FS)\n"
         U="$U    -a | --append <snip>:  Add <snip> to the kernel cmdline\n"
+        U="$U    -d | --debug:          Stop at launch for debugger to attach\n"
         U="$U    --dumpdtb <file>       Dump the generated DTB to <file>\n"
         U="$U    --dtb <file>           Use the supplied DTB instead of the auto-generated one\n"
         U="$U    -h | --help:           Show this output\n"
@@ -64,6 +66,10 @@ do
                 DTB="-dtb $2"
                 shift 2
                 ;;
+          -d | --debug)
+                GDB_FLAGS="-S"
+                shift 1
+                ;;
           -h | --help)
                 usage ""
                 exit 1
@@ -87,12 +93,20 @@ if [[ -z "$KERNEL" ]]; then
         exit 1
 fi
 
-qemu-system-aarch64 -nographic -machine virt,gic-version=2 -m ${MEMSIZE} -cpu cortex-a57 -smp ${SMP} -machine virtualization=on \
+qemu-system-aarch64 \
+        -nographic -machine virt,gic-version=2 -m ${MEMSIZE} -cpu cortex-a57 -smp ${SMP} -machine virtualization=on \
         -kernel ${KERNEL} ${DTB} \
-        -drive if=none,file=$FS,id=vda,cache=none,format=raw \
+        -drive if=none,file=$FS,id=vda,cache=none,format=qcow2 \
         -device virtio-blk-pci,drive=vda \
+        -drive if=none,file=$SEED,id=vdb,cache=none,format=raw \
+        -device virtio-blk-pci,drive=vdb \
+        -virtfs local,path=/root/linux,mount_tag=host_linux,security_model=passthrough,id=host_linux \
+        -virtfs local,path=/root/qemu,mount_tag=host_qemu,security_model=passthrough,id=host_qemu \
+        -virtfs local,path=/root/image,mount_tag=host_image,security_model=passthrough,id=host_image \
+        -virtfs local,path=/root/vm_hw1_files,mount_tag=host_vm_hw1_files,security_model=passthrough,id=host_vm_hw1_files \
         -display none \
         -serial $CONSOLE \
-        -append "console=ttyAMA0 root=/dev/vda rw $CMDLINE" \
-        -netdev user,id=net0,hostfwd=tcp::2222-:22 \
-        -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:49 \
+        -append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE" \
+        -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3333-:2222,hostfwd=tcp::2345-:1234 \
+        -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:49,romfile= \
+        -s $GDB_FLAGS
