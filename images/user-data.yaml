@@ -18,5 +18,5 @@ packages:
 mounts:
   - [host_linux, /root/linux, 9p]
   - [host_qemu, /root/qemu, 9p]
-  - [host_image, /root/image, 9p]
+  - [host_images, /root/images, 9p]
   - [host_vm_hw1_files, /root/vm_hw1_files, 9p]

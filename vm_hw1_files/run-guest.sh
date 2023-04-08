@@ -4,7 +4,7 @@ CONSOLE=mon:stdio
 SMP=2
 MEMSIZE=$((512))
 KERNEL="./linux/arch/arm64/boot/Image"
-FS="./image/ubuntu-20.04-server-cloudimg-arm64.1.qcow2"
+FS="./images/ubuntu-20.04-server-cloudimg-arm64.1.qcow2"
 CMDLINE="earlycon=pl011,0x09000000 init=/root/blocker"
 DUMPDTB=""
 DTB=""

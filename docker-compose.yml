@@ -1,10 +1,10 @@
 services:
   hw1:
-    build: ./hw1/docker
+    build: ./docker
     volumes:
-      - ./hw1/.ssh:/root/.ssh
-      - ./hw1/.vscode:/root/linux/.vscode
-      - ./hw1/linux:/root/linux
-      - ./hw1/qemu:/root/qemu
-      - ./hw1/image:/root/image
-      - ./hw1/vm_hw1_files:/root/vm_hw1_files:ro
+      - ./.ssh:/root/.ssh
+      - ./.vscode:/root/linux/.vscode
+      - ./linux:/root/linux
+      - ./qemu:/root/qemu
+      - ./images:/root/images
+      - ./vm_hw1_files:/root/vm_hw1_files:ro

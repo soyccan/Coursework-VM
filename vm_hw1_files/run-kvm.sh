@@ -4,8 +4,8 @@ CONSOLE=mon:stdio
 SMP=2
 MEMSIZE=$((2048))
 KERNEL="./linux/arch/arm64/boot/Image"
-FS="./image/ubuntu-20.04-server-cloudimg-arm64.qcow2"
-SEED="./image/seed.img"
+FS="./images/ubuntu-20.04-server-cloudimg-arm64.qcow2"
+SEED="./images/seed.img"
 CMDLINE="earlycon=pl011,0x09000000"
 DUMPDTB=""
 DTB=""
@@ -102,7 +102,7 @@ qemu-system-aarch64 \
         -device virtio-blk-pci,drive=vdb \
         -virtfs local,path=/root/linux,mount_tag=host_linux,security_model=passthrough,id=host_linux \
         -virtfs local,path=/root/qemu,mount_tag=host_qemu,security_model=passthrough,id=host_qemu \
-        -virtfs local,path=/root/image,mount_tag=host_image,security_model=passthrough,id=host_image \
+        -virtfs local,path=/root/images,mount_tag=host_images,security_model=passthrough,id=host_images \
         -virtfs local,path=/root/vm_hw1_files,mount_tag=host_vm_hw1_files,security_model=passthrough,id=host_vm_hw1_files \
         -display none \
         -serial $CONSOLE \
