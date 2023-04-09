@@ -3,8 +3,9 @@ services:
     build: ./docker
     volumes:
       - ./.ssh:/root/.ssh
+      - ./.vscode-server:/root/.vscode-server
       - ./.vscode:/root/linux/.vscode
       - ./linux:/root/linux
-      - ./qemu:/root/qemu
       - ./images:/root/images
-      - ./vm_hw1_files:/root/vm_hw1_files:ro
+      - ./vm_hw1_files:/root/vm_hw1_files
+      - ./vm_hw2_files:/root/vm_hw2_files

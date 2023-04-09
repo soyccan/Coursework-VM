@@ -5,7 +5,8 @@ SMP=2
 MEMSIZE=$((512))
 KERNEL="./linux/arch/arm64/boot/Image"
 FS="./images/ubuntu-20.04-server-cloudimg-arm64.1.qcow2"
-CMDLINE="earlycon=pl011,0x09000000 init=/root/blocker"
+CMDLINE="earlycon=pl011,0x09000000"
+# CMDLINE="$CMDLINE init=/root/blocker"
 DUMPDTB=""
 DTB=""
 
@@ -87,18 +88,13 @@ do
         esac
 done
 
-if [[ -z "$KERNEL" ]]; then
-        echo "You must supply a guest kernel" >&2
-        exit 1
-fi
-
 qemu-system-aarch64 -nographic -machine virt -m ${MEMSIZE} -cpu host -smp ${SMP} -enable-kvm \
-        -kernel ${KERNEL} ${DTB} \
-        -drive if=none,file=$FS,id=vda,cache=none,format=qcow2 \
+        ${KERNEL:+-kernel "$KERNEL"} ${DTB} \
+        -drive if=none,file="$FS",id=vda,cache=none,format=qcow2 \
         -device virtio-blk-pci,drive=vda \
         -display none \
         -serial $CONSOLE \
-        -append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE" \
+        ${KERNEL:+-append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE"} \
         -netdev user,id=net0,hostfwd=tcp::2222-:22 \
         -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:50,romfile= \
         -s $GDB_FLAGS

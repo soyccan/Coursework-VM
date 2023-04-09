@@ -1,0 +1,140 @@
+diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+index f8be56d53..fde7f9b44 100644
+--- a/arch/arm64/include/asm/kvm_host.h
++++ b/arch/arm64/include/asm/kvm_host.h
+@@ -47,6 +47,7 @@
+ #define KVM_REQ_RECORD_STEAL	KVM_ARCH_REQ(3)
+ #define KVM_REQ_RELOAD_GICv4	KVM_ARCH_REQ(4)
+ #define KVM_REQ_RELOAD_PMU	KVM_ARCH_REQ(5)
++#define KVM_REQ_WRITE_GPA	KVM_ARCH_REQ(6)
+ 
+ #define KVM_DIRTY_LOG_MANUAL_CAPS   (KVM_DIRTY_LOG_MANUAL_PROTECT_ENABLE | \
+ 				     KVM_DIRTY_LOG_INITIALLY_SET)
+diff --git a/arch/arm64/kvm/arm.c b/arch/arm64/kvm/arm.c
+index fe102cd2e..4d020cc27 100644
+--- a/arch/arm64/kvm/arm.c
++++ b/arch/arm64/kvm/arm.c
+@@ -283,9 +283,65 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
+ 	return r;
+ }
+ 
++static struct kvm *get_kvm_by_vmid(u32 vmid)
++{
++	struct kvm *kvm;
++	list_for_each_entry (kvm, &vm_list, vm_list) {
++		if (kvm->arch.mmu.vmid.vmid == vmid)
++			return kvm;
++	}
++	return NULL;
++}
++
+ long kvm_arch_dev_ioctl(struct file *filp,
+ 			unsigned int ioctl, unsigned long arg)
+ {
++	if (ioctl == KVM_ARM_WRITE_GPA) {
++		// HW2: write to VM memory
++		struct kvm_arm_write_gpa_args write_gpa_args;
++		if (copy_from_user(&write_gpa_args, (void __user *)arg,
++				   sizeof(write_gpa_args))) {
++			pr_err("write gPA fail: copy user args");
++			return -EFAULT;
++		}
++
++		struct kvm *kvm = get_kvm_by_vmid(write_gpa_args.vmid);
++		if (!kvm) {
++			pr_err("write gPA fail: no such VMID");
++			return -ENXIO; // no such VMID
++		}
++
++		void *buf = kmalloc(write_gpa_args.size, GFP_KERNEL);
++		if (!buf) {
++			pr_err("write gPA fail: kmalloc");
++			return -ENOMEM;
++		}
++		if (copy_from_user(buf, (void __user *)write_gpa_args.data,
++				   write_gpa_args.size)) {
++			pr_err("write gPA fail: copy user data");
++			return -EFAULT;
++		}
++
++		struct kvm_vcpu *vcpu =
++			kvm->vcpus[0]; // TODO: get the correct VCPU
++		vcpu->write_gpa = write_gpa_args.gpa;
++		vcpu->write_gpa_data = buf;
++		vcpu->write_gpa_size = write_gpa_args.size;
++
++		kvm_make_request(KVM_REQ_WRITE_GPA, vcpu);
++		kvm_vcpu_kick(vcpu);
++		return 0;
++	}
++	if (ioctl == KVM_ARM_GET_VMID) {
++		struct kvm *kvm;
++		unsigned long i = 0;
++		list_for_each_entry (kvm, &vm_list, vm_list) {
++			if (i == arg)
++				return kvm->arch.mmu.vmid.vmid;
++			i++;
++		}
++		return -ENXIO; // no such VMID
++	}
+ 	return -EINVAL;
+ }
+ 
+@@ -678,6 +734,19 @@ static int kvm_vcpu_initialized(struct kvm_vcpu *vcpu)
+ static void check_vcpu_requests(struct kvm_vcpu *vcpu)
+ {
+ 	if (kvm_request_pending(vcpu)) {
++		if (kvm_check_request(KVM_REQ_WRITE_GPA, vcpu)) {
++			int ret = kvm_vcpu_write_guest(vcpu, vcpu->write_gpa,
++						       vcpu->write_gpa_data,
++						       vcpu->write_gpa_size);
++			if (ret < 0)
++				pr_err("write gPA fail: write to guest (%d)",
++				       ret);
++			if (vcpu->write_gpa_data) {
++				kfree(vcpu->write_gpa_data);
++				vcpu->write_gpa_data = NULL;
++			}
++		}
++
+ 		if (kvm_check_request(KVM_REQ_SLEEP, vcpu))
+ 			vcpu_req_sleep(vcpu);
+ 
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 0f18df7fe..1d867e5bd 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -361,6 +361,10 @@ struct kvm_vcpu {
+ 	 * it is a valid slot.
+ 	 */
+ 	int last_used_slot;
++
++	gpa_t write_gpa;
++	void* write_gpa_data;
++	u64 write_gpa_size;
+ };
+ 
+ /* must be called with irqs disabled */
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index a067410eb..36de9e08a 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -887,6 +887,18 @@ struct kvm_ppc_resize_hpt {
+ #define KVM_GET_EMULATED_CPUID	  _IOWR(KVMIO, 0x09, struct kvm_cpuid2)
+ #define KVM_GET_MSR_FEATURE_INDEX_LIST    _IOWR(KVMIO, 0x0a, struct kvm_msr_list)
+ 
++/*
++ * HW2: Write to VM memory
++ */
++struct kvm_arm_write_gpa_args {
++	uint32_t vmid;  // the vmid that you, as the host, want to write to
++	uint64_t gpa;   // the gpa of the guest
++	uint64_t data;  // address of the payload in host user space
++	uint64_t size;  // size of the payload
++};
++#define KVM_ARM_WRITE_GPA _IOW(KVMIO, 0x0b, struct kvm_arm_write_gpa_args)
++#define KVM_ARM_GET_VMID _IOW(KVMIO, 0x0c, unsigned long)
++
+ /*
+  * Extension capability list.
+  */
