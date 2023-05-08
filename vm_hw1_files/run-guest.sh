@@ -1,14 +1,16 @@
 #!/bin/bash
 
 CONSOLE=mon:stdio
-SMP=2
-MEMSIZE=$((512))
-KERNEL="./linux/arch/arm64/boot/Image"
+SMP=6
+MEMSIZE=36G
+KERNEL="./linux/build-vhost/arch/arm64/boot/Image"
 FS="./images/ubuntu-20.04-server-cloudimg-arm64.1.qcow2"
+SEED="./images/seed-guest.img"
 CMDLINE="earlycon=pl011,0x09000000"
 # CMDLINE="$CMDLINE init=/root/blocker"
 DUMPDTB=""
 DTB=""
+VHOST=on
 
 usage() {
         U=""
@@ -70,6 +72,10 @@ do
                 GDB_FLAGS="-S"
                 shift 1
                 ;;
+          --no-vhost)
+                VHOST=off
+                shift 1
+                ;;
           -h | --help)
                 usage ""
                 exit 1
@@ -92,9 +98,14 @@ qemu-system-aarch64 -nographic -machine virt -m ${MEMSIZE} -cpu host -smp ${SMP}
         ${KERNEL:+-kernel "$KERNEL"} ${DTB} \
         -drive if=none,file="$FS",id=vda,cache=none,format=qcow2 \
         -device virtio-blk-pci,drive=vda \
+        -drive if=none,file="$SEED",id=vdb,cache=none,format=raw \
+        -device virtio-blk-pci,drive=vdb \
         -display none \
         -serial $CONSOLE \
         ${KERNEL:+-append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE"} \
+        -virtfs local,path=/root/benchmarks,mount_tag=benchmarks,security_model=passthrough,id=benchmarks \
         -netdev user,id=net0,hostfwd=tcp::2222-:22 \
         -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:50,romfile= \
+        -netdev tap,id=tap0,ifname=tap0,script=no,downscript=no,vhost=$VHOST \
+        -device virtio-net-pci,netdev=tap0 \
         -s $GDB_FLAGS

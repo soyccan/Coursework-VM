@@ -1,0 +1,33 @@
+#cloud-config
+hostname: guest
+ssh_pwauth: true
+ssh_authorized_keys:
+- ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHDI+XjvgCClkeAB/0okM62heWILe27A2tkoyRo9hEhA
+disable_root: false
+timezone: Asia/Taipei
+apt:
+  primary:
+  - arches: [default]
+    uri: http://tw.ports.ubuntu.com/ubuntu-ports/
+packages:
+- netperf
+- apache2
+- apache2-utils
+# for kernbench
+- gcc
+- make
+- flex
+- bison
+mounts:
+- [benchmarks, /root/benchmarks, 9p]
+write_files:
+- path: /etc/systemd/network/99-tap0.network
+  content: |
+    [Match]
+    Name=enp0s5
+
+    [Network]
+    Address=192.168.0.105/24
+
+    [Route]
+    Destination=192.168.0.0/24

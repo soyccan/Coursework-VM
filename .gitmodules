@@ -4,3 +4,12 @@
 [submodule "qemu"]
 	path = qemu
 	url = https://gitlab.com/qemu-project/qemu.git
+[submodule "benchmarks/kvmperf"]
+	path = benchmarks/kvmperf
+	url = https://github.com/chazy/kvmperf
+[submodule "benchmarks/linux-test-project"]
+	path = benchmarks/linux-test-project
+	url = https://github.com/linux-test-project/ltp
+[submodule "benchmarks/netperf"]
+	path = benchmarks/netperf
+	url = https://github.com/HewlettPackard/netperf

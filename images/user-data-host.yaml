@@ -1,0 +1,47 @@
+#cloud-config
+hostname: kvm-host
+ssh_pwauth: true
+ssh_authorized_keys:
+- ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHDI+XjvgCClkeAB/0okM62heWILe27A2tkoyRo9hEhA
+disable_root: false
+timezone: Asia/Taipei
+apt:
+  primary:
+  - arches: [default]
+    uri: http://tw.ports.ubuntu.com/ubuntu-ports/
+packages:
+- qemu-system-arm
+- gdb
+- netperf
+- apache2
+- apache2-utils
+- linux-tools-host # kvm_stat
+- linux-tools-5.15.0-71-generic # perf kvm (need match kernel version)
+# for kernbench
+- gcc
+- make
+- flex
+- bison
+mounts:
+- [benchmarks, /root/benchmarks, 9p]
+- [linux, /root/linux, 9p]
+- [images, /root/images, 9p]
+- [vm_hw1_files, /root/vm_hw1_files, 9p]
+- [vm_hw2_files, /root/vm_hw2_files, 9p]
+write_files:
+# TODO: addr & route not assigned to tap0 on boot
+- path: /etc/systemd/network/99-tap0.netdev
+  content: |
+    [NetDev]
+    Name=tap0
+    Kind=tap
+- path: /etc/systemd/network/99-tap0.network
+  content: |
+    [Match]
+    Name=tap0
+
+    [Network]
+    Address=192.168.0.101/24
+
+    [Route]
+    Destination=192.168.0.0/24

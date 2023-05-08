@@ -1,0 +1,22 @@
+root@kvm-host:~/benchmarks/workdir# /usr/lib/linux-tools/5.15.0-71-generic/perf kvm stat
+Usage: perf kvm stat <command>
+
+# Available commands:
+        record: record kvm events
+        report: report statistical data of kvm events
+        live:   live reporting of statistical data of kvm events
+
+Otherwise, it is the alias of 'perf stat':
+^C
+ Performance counter stats for 'system wide':
+
+         781159.56 msec cpu-clock:G               #    8.000 CPUs utilized
+             12499      context-switches:G        #   16.001 /sec
+               420      cpu-migrations:G          #    0.538 /sec
+              1558      page-faults:G             #    1.994 /sec
+      142277324112      cycles:G                  #    0.182 GHz
+   <not supported>      instructions:G
+   <not supported>      branches:G
+   <not supported>      branch-misses:G
+
+      97.647163802 seconds time elapsed
