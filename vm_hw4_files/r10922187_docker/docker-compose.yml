@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  server:
+    build: ./server
+    environment:
+      - OUT=/r10922187_servervol/sent.txt
+    volumes:
+      - r10922187_servervol:/r10922187_servervol
+    ports:
+      - 5000-6000:5310
+  client:
+    build: ./client
+    environment:
+      - OUT=/r10922187_clientvol/received.txt
+      - SVR_ADDR=server:5310
+    volumes:
+      - r10922187_clientvol:/r10922187_clientvol
+    depends_on:
+      - server
+volumes:
+  r10922187_servervol:
+  r10922187_clientvol:
