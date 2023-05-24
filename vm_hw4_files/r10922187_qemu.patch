@@ -1,0 +1,20 @@
+diff --git a/target/arm/translate-a64.c b/target/arm/translate-a64.c
+index 9333d7b..24a6514 100644
+--- a/target/arm/translate-a64.c
++++ b/target/arm/translate-a64.c
+@@ -14796,6 +14796,15 @@ static void aarch64_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
+     s->insn = insn;
+     s->base.pc_next = pc + 4;
+ 
++    if ((pc & 0xffff) == 0x3ce8 && insn == 0x97fffdde) {
++        // aeada2a4fdf5c3f62eb169c0617030d7 /usr/bin/login 1:4.8.1-1ubuntu5.20.04.4 (arm64)
++        // 3ce8:	97fffdde 	bl	3460 <pam_authenticate@plt>
++        // if guest instruction match this pattern => emit TCG `movi_i64 x0, 0`
++        // to forge a system call that returns PAM_SUCCESS (= 0)
++        tcg_gen_movi_i64(cpu_reg(s, 0), 0);
++        return;
++    }
++
+     s->fp_access_checked = false;
+     s->sve_access_checked = false;
+ 

@@ -13,3 +13,6 @@
 [submodule "benchmarks/netperf"]
 	path = benchmarks/netperf
 	url = https://github.com/HewlettPackard/netperf
+[submodule "vm_hw4_files/shadow"]
+	path = vm_hw4_files/shadow
+	url = https://git.launchpad.net/ubuntu/+source/shadow

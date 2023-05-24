@@ -2,3 +2,4 @@
 images/*
 .vscode-server/*
 **/workdir
+**/.cache

@@ -5,6 +5,63 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "(gdb) Attach QEMU",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/qemu/build/qemu-system-aarch64",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Launch QEMU",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/qemu/build/qemu-system-aarch64",
+            "args": [
+                "-nographic",
+                "-machine", "virt,gic-version=2",
+                "-m", "2G",
+                "-cpu", "cortex-a57",
+                "-smp", "8",
+                "-machine", "virtualization=on",
+                "-kernel", "./linux/build-vhost/arch/arm64/boot/Image",
+                "-drive", "if=none,images/ubuntu-20.04-server-cloudimg-arm64.img,id=vda,cache=none,format=qcow2",
+                "-device", "virtio-blk-pci,drive=vda",
+                "-display", "none",
+                "-serial", "mon:stdio",
+                "-append", "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE",
+                "-snapshot"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "(gdb) Attach to KVM Host",
             "type": "cppdbg",
             "request": "launch",

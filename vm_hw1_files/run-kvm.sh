@@ -1,12 +1,12 @@
 #!/bin/bash
 
 CONSOLE=mon:stdio
-SMP=8
-MEMSIZE=48G
+SMP=1
+MEMSIZE=2G
 KERNEL="./linux/build-vhost/arch/arm64/boot/Image"
-FS="./images/ubuntu-20.04-server-cloudimg-arm64.qcow2"
+FS="./images/ubuntu-20.04-server-cloudimg-arm64.img"
 SEED="./images/seed-host.img"
-CMDLINE="earlycon=pl011,0x09000000"
+CMDLINE="earlycon=pl011,0x09000000 cloud-init.disabled"
 DUMPDTB=""
 DTB=""
 
@@ -93,21 +93,23 @@ if [[ -z "$KERNEL" ]]; then
         exit 1
 fi
 
-qemu-system-aarch64 \
+qemu/build/qemu-system-aarch64 \
         -nographic -machine virt,gic-version=2 -m ${MEMSIZE} -cpu cortex-a57 -smp ${SMP} -machine virtualization=on \
         -kernel ${KERNEL} ${DTB} \
         -drive if=none,file=$FS,id=vda,cache=none,format=qcow2 \
         -device virtio-blk-pci,drive=vda \
+        $(: this is comment \
         -drive if=none,file=$SEED,id=vdb,cache=none,format=raw \
         -device virtio-blk-pci,drive=vdb \
-        -virtfs local,path=/root/benchmarks,mount_tag=benchmarks,security_model=passthrough,id=benchmarks \
-        -virtfs local,path=/root/linux,mount_tag=linux,security_model=passthrough,id=linux \
-        -virtfs local,path=/root/images,mount_tag=images,security_model=passthrough,id=images \
-        -virtfs local,path=/root/vm_hw1_files,mount_tag=vm_hw1_files,security_model=passthrough,id=vm_hw1_files \
-        -virtfs local,path=/root/vm_hw2_files,mount_tag=vm_hw2_files,security_model=passthrough,id=vm_hw2_files \
+        -virtfs local,path=/workspace/benchmarks,mount_tag=benchmarks,security_model=passthrough,id=benchmarks \
+        -virtfs local,path=/workspace/linux,mount_tag=linux,security_model=passthrough,id=linux \
+        -virtfs local,path=/workspace/images,mount_tag=images,security_model=passthrough,id=images \
+        -virtfs local,path=/workspace/vm_hw1_files,mount_tag=vm_hw1_files,security_model=passthrough,id=vm_hw1_files \
+        -virtfs local,path=/workspace/vm_hw2_files,mount_tag=vm_hw2_files,security_model=passthrough,id=vm_hw2_files \
+        ) \
         -display none \
         -serial $CONSOLE \
         -append "console=ttyAMA0 root=/dev/vda1 rw nokaslr $CMDLINE" \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3333-:2222,hostfwd=tcp::2345-:1234 \
         -device virtio-net-pci,netdev=net0,mac=de:ad:be:ef:41:49,romfile= \
-        -s $GDB_FLAGS
+        -s $GDB_FLAGS -snapshot
