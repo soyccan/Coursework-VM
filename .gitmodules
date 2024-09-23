@@ -16,3 +16,9 @@
 [submodule "vm_hw4_files/shadow"]
 	path = vm_hw4_files/shadow
 	url = https://git.launchpad.net/ubuntu/+source/shadow
+[submodule "final_project/fuzzsa-bugs"]
+	path = final_project/fuzzsa-bugs
+	url = https://github.com/fuzzsa/fuzzsa-bugs
+[submodule "final_project/via"]
+	path = final_project/via
+	url = https://github.com/file-citas/via
